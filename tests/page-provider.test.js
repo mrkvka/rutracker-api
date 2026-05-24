@@ -38,6 +38,7 @@ describe("#login", () => {
     const pageProvider = new PageProvider();
     const request = jest.fn().mockReturnValue(
       Promise.resolve({
+        status: 302,
         headers: {
           "set-cookie": [
             "bb_session=XXX; expires=Tue, 15-Feb-2028 10:09:15 GMT; Max-Age=315360000; path=/forum/; domain=.rutracker.org; HttpOnly"
@@ -62,6 +63,7 @@ describe("#login", () => {
     const pageProvider = new PageProvider();
     const request = jest.fn().mockReturnValue(
       Promise.resolve({
+        status: 302,
         headers: {
           "set-cookie": [
             "bb_ssl=1; path=/forum/; domain=.rutracker.org",

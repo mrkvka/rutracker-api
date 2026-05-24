@@ -2,13 +2,17 @@ const Parser = require("./lib/parser");
 const PageProvider = require("./lib/page-provider");
 
 class RutrackerApi {
-  constructor({ host } = {}) {
+  constructor({ host, cookie } = {}) {
     this.parser = new Parser();
-    this.pageProvider = new PageProvider({ host });
+    this.pageProvider = new PageProvider({ host, cookie });
 
     if (host) {
       this.parser.host = host;
     }
+  }
+
+  useSessionCookie(cookie) {
+    this.pageProvider.setSessionCookie(cookie);
   }
 
   login({ username, password }) {
