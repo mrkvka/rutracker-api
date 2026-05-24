@@ -1,5 +1,20 @@
-# rutracker-api [![Build Status](https://travis-ci.org/nikityy/rutracker-api.svg?branch=master)](https://travis-ci.org/nikityy/rutracker-api)
-Позволяет искать по раздачам трекера Rutracker.org. Поскольку поиск запрещён для незарегистрированных пользователей, также поддерживаетcя и авторизация.
+# rutracker-api
+
+Форк [nikityy/rutracker-api](https://github.com/nikityy/rutracker-api) с исправлениями для актуального RuTracker (HTTPS, полная сессия `bb_ssl` + `bb_session`).
+
+Позволяет искать по раздачам трекера Rutracker.org. Поскольку поиск запрещён для незарегистрированных пользователей, также поддерживается и авторизация.
+
+## Изменения в форке (1.2.0)
+
+- Хост по умолчанию: `https://rutracker.org` (раньше `http://`, из‑за редиректа логин ломался).
+- При входе сохраняются **все** cookies из `Set-Cookie`, не только первая.
+- Обновлён `axios` до 1.x.
+
+Установка из GitHub:
+
+```bash
+npm install github:mrkvka/rutracker-api
+```
 
 ## Установка
 Запусти ```npm install rutracker-api``` (предполагается, что Node.js и пакетный менеждер npm у вас уже установлены). Для работы требуется версия Node.js >= 6.

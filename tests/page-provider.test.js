@@ -10,18 +10,25 @@ describe("#login", () => {
     const username = "aaa";
     const password = "bbb";
 
-    request.mockReturnValue(Promise.reject());
+    request.mockReturnValue(
+      Promise.resolve({
+        status: 302,
+        headers: {
+          "set-cookie": ["bb_session=test; path=/forum/"]
+        }
+      })
+    );
     pageProvider.request = request;
 
-    pageProvider.login(username, password);
-
-    expect(request.mock.calls.length).toBe(1);
-    expect(request.mock.calls[0][0]).toEqual({
-      data: `login_username=${username}&login_password=${password}&login=%D0%92%D1%85%D0%BE%D0%B4`,
-      maxRedirects: 0,
-      method: "POST",
-      url: "http://rutracker.org/forum/login.php",
-      validateStatus: request.mock.calls[0][0].validateStatus
+    return pageProvider.login(username, password).then(() => {
+      expect(request.mock.calls.length).toBe(1);
+      expect(request.mock.calls[0][0]).toEqual({
+        data: `login_username=${username}&login_password=${password}&login=%D0%92%D1%85%D0%BE%D0%B4`,
+        maxRedirects: 0,
+        method: "POST",
+        url: "https://rutracker.org/forum/login.php",
+        validateStatus: request.mock.calls[0][0].validateStatus
+      });
     });
   });
 
@@ -49,6 +56,28 @@ describe("#login", () => {
     });
   });
 
+  test("joins multiple set-cookie headers", () => {
+    expect.assertions(1);
+
+    const pageProvider = new PageProvider();
+    const request = jest.fn().mockReturnValue(
+      Promise.resolve({
+        headers: {
+          "set-cookie": [
+            "bb_ssl=1; path=/forum/; domain=.rutracker.org",
+            "bb_session=YYY; path=/forum/; domain=.rutracker.org; HttpOnly"
+          ]
+        }
+      })
+    );
+
+    pageProvider.request = request;
+
+    return pageProvider.login("aaa", "bbb").then(() => {
+      expect(pageProvider.cookie).toEqual("bb_ssl=1; bb_session=YYY");
+    });
+  });
+
   test("resolves if called with correct credentials", () => {
     expect.assertions(1);
 
@@ -61,7 +90,7 @@ describe("#login", () => {
       Promise.resolve({
         status: 302,
         headers: {
-          "set-cookie": "COOKIE"
+          "set-cookie": ["bb_session=COOKIE; path=/forum/"]
         }
       })
     );
@@ -92,7 +121,9 @@ describe("#search", () => {
     expect.assertions(4);
 
     const pageProvider = new PageProvider();
-    const request = jest.fn().mockReturnValue(Promise.resolve({ status: 200 }));
+    const request = jest
+      .fn()
+      .mockReturnValue(Promise.resolve({ status: 200, data: Buffer.from("") }));
     const cookie = "cookie";
     const query = "query";
 
@@ -100,22 +131,26 @@ describe("#search", () => {
     pageProvider.cookie = cookie;
     pageProvider.request = request;
 
-    pageProvider.search({ query });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
-      data: "",
-      headers: { Cookie: cookie },
-      method: "POST",
-      responseType: "arraybuffer",
-      url: `http://rutracker.org/forum/tracker.php?nm=${query}`
-    });
-
-    pageProvider.search({ query, sort: "size" });
-    expect(request.mock.calls[1][0].data).toEqual("o=7");
-
-    pageProvider.search({ query, sort: "size", order: "asc" });
-    expect(request.mock.calls[2][0].data).toEqual("o=7&s=1");
+    return pageProvider
+      .search({ query })
+      .then(() => {
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(request).toHaveBeenCalledWith({
+          data: "",
+          headers: { Cookie: cookie },
+          method: "POST",
+          responseType: "arraybuffer",
+          url: `https://rutracker.org/forum/tracker.php?nm=${query}`
+        });
+      })
+      .then(() => pageProvider.search({ query, sort: "size" }))
+      .then(() => {
+        expect(request.mock.calls[1][0].data).toEqual("o=7");
+        return pageProvider.search({ query, sort: "size", order: "asc" });
+      })
+      .then(() => {
+        expect(request.mock.calls[2][0].data).toEqual("o=7&s=1");
+      });
   });
 
   test("rejects if called with unknown sorting", () => {
@@ -178,19 +213,21 @@ describe("#thread", () => {
     const cookie = "cookie";
     const id = "123";
 
-    request.mockReturnValue(Promise.resolve({ status: 200 }));
+    request.mockReturnValue(
+      Promise.resolve({ status: 200, data: Buffer.from("") })
+    );
     pageProvider.authorized = true;
     pageProvider.cookie = cookie;
     pageProvider.request = request;
 
-    pageProvider.thread(id);
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
-      headers: { Cookie: cookie },
-      method: "GET",
-      responseType: "arraybuffer",
-      url: `http://rutracker.org/forum/viewtopic.php?t=${id}`
+    return pageProvider.thread(id).then(() => {
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(request).toHaveBeenCalledWith({
+        headers: { Cookie: cookie },
+        method: "GET",
+        responseType: "arraybuffer",
+        url: `https://rutracker.org/forum/viewtopic.php?t=${id}`
+      });
     });
   });
 
@@ -212,19 +249,21 @@ describe("#torrentFile", () => {
     const cookie = "cookie";
     const id = "123";
 
-    request.mockReturnValue(Promise.resolve({ status: 200 }));
+    request.mockReturnValue(
+      Promise.resolve({ status: 200, data: { pipe: jest.fn() } })
+    );
     pageProvider.authorized = true;
     pageProvider.cookie = cookie;
     pageProvider.request = request;
 
-    pageProvider.torrentFile(id);
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
-      headers: { Cookie: cookie },
-      method: "GET",
-      responseType: "stream",
-      url: `http://rutracker.org/forum/dl.php?t=${id}`
+    return pageProvider.torrentFile(id).then(() => {
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(request).toHaveBeenCalledWith({
+        headers: { Cookie: cookie },
+        method: "GET",
+        responseType: "stream",
+        url: `https://rutracker.org/forum/dl.php?t=${id}`
+      });
     });
   });
 

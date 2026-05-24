@@ -14,6 +14,7 @@ module.exports = {
   rules: {
     'prettier/prettier': 'error',
     'class-methods-use-this': 'off',
+    'linebreak-style': 'off',
   },
   env: {
     node: true
